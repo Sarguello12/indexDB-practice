@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+    </head>
+    <body>
+        <h1>IndexedDb Notes</h1>
+        <p>IndexedDB is a database that is built into a browser, much more powerful than localStorage.</p>
+        <ul>
+            <li>Stores almost any kind of values by keys, multiple key types.</li>
+            <li>Supports transactions for reliability.</li>
+            <li>Supports key range queries, indexes.</li>
+            <li>Can store much bigger volumes of data than localStorage.</li>
+        </ul>
+        <p>That power is usually excessive for traditional client-server apps. IndexedDB is intended for offline apps, to be combined with ServiceWorkers and other technologies.
+
+            The native interface to IndexedDB, described in the specification <a href="https://www.w3.org/TR/IndexedDB" target="_blank">https://www.w3.org/TR/IndexedDB</a>, is event-based.
+            
+            We can also use async/await with the help of a promise-based wrapper, like <a href="https://github.com/jakearchibald/idb" target="_blank">https://github.com/jakearchibald/idb</a>. 
+            That’s pretty convenient, but the wrapper is not perfect, it can’t replace events for all cases. 
+            So we’ll start with events, and then, after we gain an understanding of IndexedDb, we’ll use the wrapper.</p>
+
+            <fieldset>
+            <h4>Where’s the data?</h4>
+            <p>Technically, the data is usually stored in the visitor’s home directory, along with browser settings, extensions, etc.
+                Different browsers and OS-level users have each their own independant storage.
+                </p>
+        </fieldset>
+        <script>
+
+            (function(){
+            // checks if the browser supports indexDb
+            if (!('indexedDB' in window)) {
+                console.log("This browser doesn't support IndexedDB");
+                return;
+            }
+            
+            // opens database
+            let openRequest = indexedDB.open("food", 1);
+
+            // if database is able to open code will run
+            openRequest.onsuccess = function() {
+                console.log("sandos coming your way")
+            }
+
+            // if database is unable to open code will run
+            openRequest.onerror = function(){
+                console.log("Error", openRequest.error);
+            }
+
+            // if database is created it can be then updated by adding stores
+            openRequest.onupgradeneeded = function() {
+                let db = openRequest.result;
+
+                // checks if there's no "Sandos" store
+                if (!db.objectStoreNames.contains("Sandos")) {
+                    // creates the store with name and keyPath (a path to an object property that IndexedDB will use as the key, e.g. id)
+                    db.createObjectStore("Sandos", {keyPath: "id"});
+                }
+            };
+               
+        })();
+
+        </script>
+    </body>
+</html>
+
+
