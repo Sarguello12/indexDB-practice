@@ -45,6 +45,15 @@
         </form>
 
         <p id="searchedSando"></p>
+
+        <h4>Delete a Sando</h4>
+        <form id="delete">
+           <label>name</label>
+            <input type="text" id="deleteName">
+            <button>Delete</button> 
+        </form>
+
+        <p id="deleteMessage"></p>
         
         <script>
 
@@ -160,19 +169,36 @@
                     let p = document.getElementById("searchedSando");
                     let sando = request.result;
 
+                    // if result returned is undefined error message will be shown
                     if (sando !== undefined) {
                         p.innerText = sando.name + " $" + sando.price;
-                     } else {
+                    } else {
                         p.innerText = "Hmmm... can't find that sando";
-                     }
-                    
-                    
+                    } 
                 }
-
-                
             }
 
             searchForm.addEventListener("submit", searchSando);
+
+            // ========== Delete functionality ==========
+
+            const deleteForm = document.getElementById("delete");
+
+            const deleteSando = (event) => {
+                event.preventDefault();
+                let deleteName = document.getElementById("deleteName").value;
+
+                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
+                let request = sandoObjectStore.get(deleteName);
+
+                request.onsuccess = function() {
+                    console.log(request.result.name)
+                }
+
+
+            }
+
+            deleteForm.addEventListener("submit", deleteSando);
             
         })();
 
