@@ -142,23 +142,34 @@
             sandoForm.addEventListener("submit", createSando);
 
             // ========== Search functionality ==========
+
             const searchForm = document.getElementById("search");
 
+            // function searches through DB to find specific sando by name
             const searchSando = (event) => {
                 event.preventDefault();
                 let search = document.getElementById("searchName").value;
 
+                // opens a new transaction to search through the DB
                 let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
                 let request = sandoObjectStore.get(search);
 
+                // on success the p tag on page will be populated with the result
                 request.onsuccess = function() {
                     let sandoList = document.getElementById("sandoList");
-                    let sando = request.result;
-                    
                     let p = document.getElementById("searchedSando");
-                    p.innerText = sando.name + " $" + sando.price;
+                    let sando = request.result;
+
+                    if (sando !== undefined) {
+                        p.innerText = sando.name + " $" + sando.price;
+                     } else {
+                        p.innerText = "Hmmm... can't find that sando";
+                     }
+                    
+                    
                 }
-                console.log(search);
+
+                
             }
 
             searchForm.addEventListener("submit", searchSando);
