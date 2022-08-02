@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-
+        <title>IndexedDb Notes</title>
     </head>
     <body>
         <h1>IndexedDb Notes</h1>
@@ -25,6 +25,7 @@
             <p>Technically, the data is usually stored in the visitor’s home directory, along with browser settings, extensions, etc.
                 Different browsers and OS-level users have each their own independant storage.</p>
         </fieldset>
+
         <h4>Add a Sando</h4>
         <form id="submit">
             <label>name</label>
@@ -33,7 +34,18 @@
             <input type="number" id="price">
             <button>Submit</button>
         </form>
+
         <ul id="sandoList"></ul>
+
+        <h4>Search a Sando</h4>
+        <form id="search">
+           <label>name</label>
+            <input type="text" id="searchName">
+            <button>Search</button> 
+        </form>
+
+        <p id="searchedSando"></p>
+        
         <script>
 
             (function(){
@@ -112,8 +124,8 @@
             // function pulls form inputs and creates a Sando object
             const createSando = (event) => {
                 event.preventDefault();
-                name = document.getElementById("name").value;
-                price = document.getElementById("price").value;
+                let name = document.getElementById("name").value;
+                let price = document.getElementById("price").value;
 
                 newSando = new Sando(name, price);
 
@@ -121,12 +133,35 @@
                 let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
                 sandoObjectStore.add(newSando);
 
+                // adds new Sando to the Sando list
                 let li = document.createElement("li");
                 li.innerText = newSando.name + " $" + newSando.price;
                 sandoList.appendChild(li);
             }
             
             sandoForm.addEventListener("submit", createSando);
+
+            // ========== Search functionality ==========
+            const searchForm = document.getElementById("search");
+
+            const searchSando = (event) => {
+                event.preventDefault();
+                let search = document.getElementById("searchName").value;
+
+                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
+                let request = sandoObjectStore.get(search);
+
+                request.onsuccess = function() {
+                    let sandoList = document.getElementById("sandoList");
+                    let sando = request.result;
+                    
+                    let p = document.getElementById("searchedSando");
+                    p.innerText = sando.name + " $" + sando.price;
+                }
+                console.log(search);
+            }
+
+            searchForm.addEventListener("submit", searchSando);
             
         })();
 
