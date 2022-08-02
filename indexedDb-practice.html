@@ -25,6 +25,14 @@
             <p>Technically, the data is usually stored in the visitor’s home directory, along with browser settings, extensions, etc.
                 Different browsers and OS-level users have each their own independant storage.</p>
         </fieldset>
+        <h4>Add a Sando</h4>
+        <form id="submit">
+            <label>name</label>
+            <input type="text" id="name">
+            <label>price</label>
+            <input type="number" id="price">
+            <button>Submit</button>
+        </form>
         <script>
 
             (function(){
@@ -36,25 +44,26 @@
             
             // opens database
             let openRequest = indexedDB.open("food", 1);
-        
+            let db;
 
             // if database is able to open code will run
-            // openRequest.onsuccess = function() {
-            //     console.log("sandos coming your way")
-            // }
+            openRequest.onsuccess = function() {
+                db = openRequest.result;
+                console.log("sandos coming your way")
+            }
 
             // if database is unable to open code will run
-            // openRequest.onerror = function(){
-            //     console.log("Error", openRequest.error);
-            // }
+            openRequest.onerror = function(){
+                console.log("Error", openRequest.error);
+            }
 
             // if database is created it can be then updated by adding stores
             openRequest.onupgradeneeded = (event) => {
                 
-                let db = event.target.result;
+                db = event.target.result;
 
                 // creates the store with name and keyPath (a path to an object property that IndexedDB will use as the key, e.g. id)
-                const sandoStore = db.createObjectStore("Sandos", {keyPath: "name"});
+                let sandoStore = db.createObjectStore("Sandos", {keyPath: "name"});
             
 
                 let baconEggCheese = {
@@ -62,22 +71,38 @@
                     price: 5
                 }
 
+                // waits for the store to be created before executing the code block inside
                 sandoStore.transaction.oncomplete = (event) => {
-                    const sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
+                    // opens a transaction for the store we want to add values into
+                    let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
+                    // adds our object into the store
                     sandoObjectStore.add(baconEggCheese);
                 }
-
-                // let transaction = db.transaction("Sandos", "readwrite")
-
-                // let sandos = transaction.objectStore("Sandos");
-
-           
-
-                // let request = sandos.add(baconEggCheese);
-
             };
-       
 
+            class Sando {
+                constructor(name, price){
+                    this.name = name,
+                    this.price = price
+                }
+            }
+       
+            const sandoForm = document.getElementById("submit");
+
+            const createSando = (event) => {
+                event.preventDefault();
+                name = document.getElementById("name").value;
+                price = document.getElementById("price").value;
+
+                newSando = new Sando(name, price);
+
+                // console.log(newSando);
+                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
+                sandoObjectStore.add(newSando);
+            }
+            
+            sandoForm.addEventListener("submit", createSando);
+            
            
 
         })();
