@@ -1,209 +1,226 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>IndexedDb Notes</title>
-    </head>
-    <body>
-        <h1>IndexedDb Notes</h1>
-        <p>IndexedDB is a database that is built into a browser, much more powerful than localStorage.</p>
-        <ul>
-            <li>Stores almost any kind of values by keys, multiple key types.</li>
-            <li>Supports transactions for reliability.</li>
-            <li>Supports key range queries, indexes.</li>
-            <li>Can store much bigger volumes of data than localStorage.</li>
-        </ul>
-        <p>That power is usually excessive for traditional client-server apps. IndexedDB is intended for offline apps, to be combined with ServiceWorkers and other technologies.
+	<head>
+		<title>IndexedDb Notes</title>
+	</head>
+	<body>
+		<h1>IndexedDb Notes</h1>
+		<p>
+			IndexedDB is a database that is built into a browser, much more powerful
+			than localStorage.
+		</p>
+		<ul>
+			<li>Stores almost any kind of values by keys, multiple key types.</li>
+			<li>Supports transactions for reliability.</li>
+			<li>Supports key range queries, indexes.</li>
+			<li>Can store much bigger volumes of data than localStorage.</li>
+		</ul>
+		<p>
+			That power is usually excessive for traditional client-server apps.
+			IndexedDB is intended for offline apps, to be combined with ServiceWorkers
+			and other technologies. The native interface to IndexedDB, described in
+			the specification
+			<a href="https://www.w3.org/TR/IndexedDB" target="_blank"
+				>https://www.w3.org/TR/IndexedDB</a
+			>, is event-based. We can also use async/await with the help of a
+			promise-based wrapper, like
+			<a href="https://github.com/jakearchibald/idb" target="_blank"
+				>https://github.com/jakearchibald/idb</a
+			>. That’s pretty convenient, but the wrapper is not perfect, it can’t
+			replace events for all cases. So we’ll start with events, and then, after
+			we gain an understanding of IndexedDb, we’ll use the wrapper.
+		</p>
 
-            The native interface to IndexedDB, described in the specification <a href="https://www.w3.org/TR/IndexedDB" target="_blank">https://www.w3.org/TR/IndexedDB</a>, is event-based.
-            
-            We can also use async/await with the help of a promise-based wrapper, like <a href="https://github.com/jakearchibald/idb" target="_blank">https://github.com/jakearchibald/idb</a>. 
-            That’s pretty convenient, but the wrapper is not perfect, it can’t replace events for all cases. 
-            So we’ll start with events, and then, after we gain an understanding of IndexedDb, we’ll use the wrapper.</p>
+		<fieldset>
+			<h4>Where’s the data?</h4>
+			<p>
+				Technically, the data is usually stored in the visitor’s home directory,
+				along with browser settings, extensions, etc. Different browsers and
+				OS-level users have each their own independant storage.
+			</p>
+		</fieldset>
 
-        <fieldset>
-            <h4>Where’s the data?</h4>
-            <p>Technically, the data is usually stored in the visitor’s home directory, along with browser settings, extensions, etc.
-                Different browsers and OS-level users have each their own independant storage.</p>
-        </fieldset>
+		<h4>Add a Sando</h4>
+		<form id="submit">
+			<label>name</label>
+			<input type="text" id="name" />
+			<label>price</label>
+			<input type="number" id="price" />
+			<button>Submit</button>
+		</form>
 
-        <h4>Add a Sando</h4>
-        <form id="submit">
-            <label>name</label>
-            <input type="text" id="name">
-            <label>price</label>
-            <input type="number" id="price">
-            <button>Submit</button>
-        </form>
+		<ul id="sandoList"></ul>
 
-        <ul id="sandoList"></ul>
+		<h4>Search a Sando</h4>
+		<form id="search">
+			<label>name</label>
+			<input type="text" id="searchName" />
+			<button>Search</button>
+		</form>
 
-        <h4>Search a Sando</h4>
-        <form id="search">
-           <label>name</label>
-            <input type="text" id="searchName">
-            <button>Search</button> 
-        </form>
+		<p id="searchedSando"></p>
 
-        <p id="searchedSando"></p>
+		<h4>Delete a Sando</h4>
+		<form id="delete">
+			<label>name</label>
+			<input type="text" id="deleteName" />
+			<button>Delete</button>
+		</form>
 
-        <h4>Delete a Sando</h4>
-        <form id="delete">
-           <label>name</label>
-            <input type="text" id="deleteName">
-            <button>Delete</button> 
-        </form>
+		<p id="deleteMessage"></p>
 
-        <p id="deleteMessage"></p>
-        
-        <script>
+		<script>
+			(function () {
+				// checks if the browser supports indexDb
+				if (!("indexedDB" in window)) {
+					console.log("This browser doesn't support IndexedDB");
+					return;
+				}
 
-            (function(){
-            // checks if the browser supports indexDb
-            if (!('indexedDB' in window)) {
-                console.log("This browser doesn't support IndexedDB");
-                return;
-            }
-            
-            // opens database
-            let openRequest = indexedDB.open("food", 1);
-            let db;
+				// opens database
+				let openRequest = indexedDB.open("food", 1);
+				let db;
 
-            // if database is able to open code will run
-            openRequest.onsuccess = function() {
-                db = openRequest.result;
+				// if database is able to open code will run
+				openRequest.onsuccess = function () {
+					db = openRequest.result;
 
-                // opens transaction to sando object store
-                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
-                // requests all values stored in the DB
-                let request = sandoObjectStore.getAll();
-                
-                // function will not run until data is successfully queried
-                request.onsuccess = function() {
-                    let sandoList = document.getElementById("sandoList");
-                    let Sandos = request.result;
-                    
-                    // loops through Sandos array and displays all Sandos in a li on the screen
-                    Sandos.forEach(sando => {
-                        let li = document.createElement("li");
-                        li.innerText = sando.name + " $" + sando.price;
-                        sandoList.appendChild(li);
-                    })
-                }
-            }
+					// opens transaction to sando object store
+					let sandoObjectStore = db
+						.transaction("Sandos", "readwrite")
+						.objectStore("Sandos");
+					// requests all values stored in the DB
+					let request = sandoObjectStore.getAll();
 
-            // if database is unable to open code will run
-            openRequest.onerror = function(){
-                console.log("Error", openRequest.error);
-            }
+					// function will not run until data is successfully queried
+					request.onsuccess = function () {
+						let sandoList = document.getElementById("sandoList");
+						let Sandos = request.result;
 
-            // if database is created it can be then updated by adding stores
-            openRequest.onupgradeneeded = (event) => {
-                db = event.target.result;
+						// loops through Sandos array and displays all Sandos in a li on the screen
+						Sandos.forEach((sando) => {
+							let li = document.createElement("li");
+							li.innerText = sando.name + " $" + sando.price;
+							sandoList.appendChild(li);
+						});
+					};
+				};
 
-                // creates the store with name and keyPath (a path to an object property that IndexedDB will use as the key, e.g. id)
-                let sandoStore = db.createObjectStore("Sandos", {keyPath: "name"});
-            
-                let baconEggCheese = {
-                    name: "Bacon Egg and Cheese",
-                    price: 5
-                }
+				// if database is unable to open code will run
+				openRequest.onerror = function () {
+					console.log("Error", openRequest.error);
+				};
 
-                // waits for the store to be created before executing the code block inside
-                sandoStore.transaction.oncomplete = (event) => {
-                    // opens a transaction for the store we want to add values into
-                    let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
-                    // adds our object into the store
-                    sandoObjectStore.add(baconEggCheese);
-                }
-            };
+				// if database is created it can be then updated by adding stores
+				openRequest.onupgradeneeded = (event) => {
+					db = event.target.result;
 
+					// creates the store with name and keyPath (a path to an object property that IndexedDB will use as the key, e.g. id)
+					let sandoStore = db.createObjectStore("Sandos", { keyPath: "name" });
 
-            // ========== Add Sando functionality ==========
+					let baconEggCheese = {
+						name: "Bacon Egg and Cheese",
+						price: 5,
+					};
 
-            // sando class constructor
-            class Sando {
-                constructor(name, price){
-                    this.name = name,
-                    this.price = price
-                }
-            }
-       
-            const sandoForm = document.getElementById("submit");
+					// waits for the store to be created before executing the code block inside
+					sandoStore.transaction.oncomplete = (event) => {
+						// opens a transaction for the store we want to add values into
+						let sandoObjectStore = db
+							.transaction("Sandos", "readwrite")
+							.objectStore("Sandos");
+						// adds our object into the store
+						sandoObjectStore.add(baconEggCheese);
+					};
+				};
 
-            // function pulls form inputs and creates a Sando object
-            const createSando = (event) => {
-                event.preventDefault();
-                let name = document.getElementById("name").value;
-                let price = document.getElementById("price").value;
+				// ========== Add Sando functionality ==========
 
-                newSando = new Sando(name, price);
+				// sando class constructor
+				class Sando {
+					constructor(name, price) {
+						(this.name = name), (this.price = price);
+					}
+				}
 
-                // opens new transaction and adds the created object
-                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
-                sandoObjectStore.add(newSando);
+				const sandoForm = document.getElementById("submit");
 
-                // adds new Sando to the Sando list
-                let li = document.createElement("li");
-                li.innerText = newSando.name + " $" + newSando.price;
-                sandoList.appendChild(li);
-            }
-            
-            sandoForm.addEventListener("submit", createSando);
+				// function pulls form inputs and creates a Sando object
+				const createSando = (event) => {
+					event.preventDefault();
+					let name = document.getElementById("name").value;
+					let price = document.getElementById("price").value;
 
-            // ========== Search functionality ==========
+					newSando = new Sando(name, price);
 
-            const searchForm = document.getElementById("search");
+					// opens new transaction and adds the created object
+					let sandoObjectStore = db
+						.transaction("Sandos", "readwrite")
+						.objectStore("Sandos");
+					sandoObjectStore.add(newSando);
 
-            // function searches through DB to find specific sando by name
-            const searchSando = (event) => {
-                event.preventDefault();
-                let search = document.getElementById("searchName").value;
+					// adds new Sando to the Sando list
+					let li = document.createElement("li");
+					li.innerText = newSando.name + " $" + newSando.price;
+					sandoList.appendChild(li);
+				};
 
-                // opens a new transaction to search through the DB
-                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
-                let request = sandoObjectStore.get(search);
+				sandoForm.addEventListener("submit", createSando);
 
-                // on success the p tag on page will be populated with the result
-                request.onsuccess = function() {
-                    let sandoList = document.getElementById("sandoList");
-                    let p = document.getElementById("searchedSando");
-                    let sando = request.result;
+				// ========== Search functionality ==========
 
-                    // if result returned is undefined error message will be shown
-                    if (sando !== undefined) {
-                        p.innerText = sando.name + " $" + sando.price;
-                    } else {
-                        p.innerText = "Hmmm... can't find that sando";
-                    } 
-                }
-            }
+				const searchForm = document.getElementById("search");
 
-            searchForm.addEventListener("submit", searchSando);
+				// function searches through DB to find specific sando by name
+				const searchSando = (event) => {
+					event.preventDefault();
+					let search = document.getElementById("searchName").value;
 
-            // ========== Delete functionality ==========
+					// opens a new transaction to search through the DB
+					let sandoObjectStore = db
+						.transaction("Sandos", "readwrite")
+						.objectStore("Sandos");
+					let request = sandoObjectStore.get(search);
 
-            const deleteForm = document.getElementById("delete");
+					// on success the p tag on page will be populated with the result
+					request.onsuccess = function () {
+						let sandoList = document.getElementById("sandoList");
+						let p = document.getElementById("searchedSando");
+						let sando = request.result;
 
-            const deleteSando = (event) => {
-                event.preventDefault();
-                let deleteName = document.getElementById("deleteName").value;
+						// if result returned is undefined error message will be shown
+						if (sando !== undefined) {
+							p.innerText = sando.name + " $" + sando.price;
+						} else {
+							p.innerText = "Hmmm... can't find that sando";
+						}
+					};
+				};
 
-                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
-                let request = sandoObjectStore.get(deleteName);
+				searchForm.addEventListener("submit", searchSando);
 
-                request.onsuccess = function() {
-                    console.log(request.result.name)
-                }
+				// ========== Delete functionality ==========
 
+				const deleteForm = document.getElementById("delete");
 
-            }
+				const deleteSando = (event) => {
+					event.preventDefault();
+					let deleteName = document.getElementById("deleteName").value;
 
-            deleteForm.addEventListener("submit", deleteSando);
-            
-        })();
+					let sandoObjectStore = db
+						.transaction("Sandos", "readwrite")
+						.objectStore("Sandos");
+					let request = sandoObjectStore.get(deleteName);
 
-        </script>
-    </body>
+					request.onsuccess = function () {
+						let id = request.result.name;
+						sandoObjectStore.delete(id);
+						window.location.reload();
+					};
+				};
+
+				deleteForm.addEventListener("submit", deleteSando);
+			})();
+		</script>
+	</body>
 </html>
-
-
