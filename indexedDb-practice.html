@@ -20,11 +20,10 @@
             That’s pretty convenient, but the wrapper is not perfect, it can’t replace events for all cases. 
             So we’ll start with events, and then, after we gain an understanding of IndexedDb, we’ll use the wrapper.</p>
 
-            <fieldset>
+        <fieldset>
             <h4>Where’s the data?</h4>
             <p>Technically, the data is usually stored in the visitor’s home directory, along with browser settings, extensions, etc.
-                Different browsers and OS-level users have each their own independant storage.
-                </p>
+                Different browsers and OS-level users have each their own independant storage.</p>
         </fieldset>
         <script>
 
@@ -37,28 +36,50 @@
             
             // opens database
             let openRequest = indexedDB.open("food", 1);
+        
 
             // if database is able to open code will run
-            openRequest.onsuccess = function() {
-                console.log("sandos coming your way")
-            }
+            // openRequest.onsuccess = function() {
+            //     console.log("sandos coming your way")
+            // }
 
             // if database is unable to open code will run
-            openRequest.onerror = function(){
-                console.log("Error", openRequest.error);
-            }
+            // openRequest.onerror = function(){
+            //     console.log("Error", openRequest.error);
+            // }
 
             // if database is created it can be then updated by adding stores
-            openRequest.onupgradeneeded = function() {
-                let db = openRequest.result;
+            openRequest.onupgradeneeded = (event) => {
+                
+                let db = event.target.result;
 
-                // checks if there's no "Sandos" store
-                if (!db.objectStoreNames.contains("Sandos")) {
-                    // creates the store with name and keyPath (a path to an object property that IndexedDB will use as the key, e.g. id)
-                    db.createObjectStore("Sandos", {keyPath: "id"});
+                // creates the store with name and keyPath (a path to an object property that IndexedDB will use as the key, e.g. id)
+                const sandoStore = db.createObjectStore("Sandos", {keyPath: "name"});
+            
+
+                let baconEggCheese = {
+                    name: "Bacon Egg and Cheese",
+                    price: 5
                 }
+
+                sandoStore.transaction.oncomplete = (event) => {
+                    const sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
+                    sandoObjectStore.add(baconEggCheese);
+                }
+
+                // let transaction = db.transaction("Sandos", "readwrite")
+
+                // let sandos = transaction.objectStore("Sandos");
+
+           
+
+                // let request = sandos.add(baconEggCheese);
+
             };
-               
+       
+
+           
+
         })();
 
         </script>
