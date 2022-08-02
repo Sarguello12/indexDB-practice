@@ -33,6 +33,7 @@
             <input type="number" id="price">
             <button>Submit</button>
         </form>
+        <ul id="sandoList"></ul>
         <script>
 
             (function(){
@@ -49,7 +50,24 @@
             // if database is able to open code will run
             openRequest.onsuccess = function() {
                 db = openRequest.result;
-                console.log("sandos coming your way")
+
+                // opens transaction to sando object store
+                let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
+                // requests all values stored in the DB
+                let request = sandoObjectStore.getAll();
+                
+                // function will not run until data is successfully queried
+                request.onsuccess = function() {
+                    let sandoList = document.getElementById("sandoList");
+                    let Sandos = request.result;
+                    
+                    // loops through Sandos array and displays all Sandos in a li on the screen
+                    Sandos.forEach(sando => {
+                        let li = document.createElement("li");
+                        li.innerText = sando.name + " $" + sando.price;
+                        sandoList.appendChild(li);
+                    })
+                }
             }
 
             // if database is unable to open code will run
@@ -59,13 +77,11 @@
 
             // if database is created it can be then updated by adding stores
             openRequest.onupgradeneeded = (event) => {
-                
                 db = event.target.result;
 
                 // creates the store with name and keyPath (a path to an object property that IndexedDB will use as the key, e.g. id)
                 let sandoStore = db.createObjectStore("Sandos", {keyPath: "name"});
             
-
                 let baconEggCheese = {
                     name: "Bacon Egg and Cheese",
                     price: 5
@@ -80,6 +96,10 @@
                 }
             };
 
+
+            // ========== Add Sando functionality ==========
+
+            // sando class constructor
             class Sando {
                 constructor(name, price){
                     this.name = name,
@@ -89,6 +109,7 @@
        
             const sandoForm = document.getElementById("submit");
 
+            // function pulls form inputs and creates a Sando object
             const createSando = (event) => {
                 event.preventDefault();
                 name = document.getElementById("name").value;
@@ -96,15 +117,17 @@
 
                 newSando = new Sando(name, price);
 
-                // console.log(newSando);
+                // opens new transaction and adds the created object
                 let sandoObjectStore = db.transaction("Sandos", "readwrite").objectStore("Sandos");
                 sandoObjectStore.add(newSando);
+
+                let li = document.createElement("li");
+                li.innerText = newSando.name + " $" + newSando.price;
+                sandoList.appendChild(li);
             }
             
             sandoForm.addEventListener("submit", createSando);
             
-           
-
         })();
 
         </script>
